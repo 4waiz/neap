@@ -1,0 +1,1370 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="A concept landing page for a tide and swell app, moved entirely by motion-anything recipes, with a Motion notes mode that labels each recipe and shows the motion budget for every section.">
+<meta name="color-scheme" content="light dark">
+<meta property="og:title" content="Neap Tide Forecasts">
+<meta property="og:description" content="A concept landing page for a tide and swell app, moved entirely by motion-anything recipes, with a Motion notes mode that labels each recipe and shows the motion budget for every section.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%227%22%20fill%3D%22%230c1f28%22%2F%3E%3Cpath%20d%3D%22M5%2019c4-7%207-7%2011%200s7%207%2011%200%22%20fill%3D%22none%22%20stroke%3D%22%235fb9d3%22%20stroke-width%3D%222.6%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E">
+<style>/* page reset (the same small reset the original artifact host provided) */
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Neap Tide Forecasts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..700;1,6..96,400..700&family=Martian+Mono:wght@300..600&family=Public+Sans:wght@300..700&display=swap">
+<style>
+:root{
+  /* Layout: a nautical chart sheet. The hero is the chart's title block inside a graduated
+     neatline; every section below is an inset printed on the same water. */
+  --water:#e2ecef;        /* ground: the chart's shallow-water tint */
+  --paper:#f5f9fa;        /* insets and panels */
+  --ink:#0c1f28;          /* lettering */
+  --ink-2:#4a5f69;        /* secondary lettering */
+  --sea:#1d6b8a;          /* depth contours, the tide curve */
+  --magenta:#ad1167;      /* chart magenta: marks, and the page's one accent */
+  --on-magenta:#ffffff;
+  --good:#1b7650; --warn:#94590a; --bad:#b02a22; --epic:#5a45c4;   /* surf calls */
+  --wave-alpha:.34;       /* wave-field stroke strength */
+  --rule:color-mix(in srgb, var(--ink) 14%, transparent);
+  --rule-strong:color-mix(in srgb, var(--ink) 46%, transparent);
+
+  --display:"Bodoni Moda", "Bodoni 72", Didot, "Bodoni MT", Georgia, serif;
+  --body:"Public Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono:"Martian Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --t-hero:clamp(2.75rem, 1.2rem + 6.4vw, 7.25rem);
+  --t-h2:clamp(2.1rem, 1.3rem + 3.2vw, 4rem);
+  --t-body:1.0625rem;
+  --t-label:.6875rem;
+
+  --ease-out:cubic-bezier(0.16, 1, 0.3, 1);       /* MOTION-SPEC ease-out */
+  --ease-spring:cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    /* night mode of an electronic chart display: dim colours that keep night vision */
+    --water:#06121a; --paper:#0b1b23; --ink:#d6e4e9; --ink-2:#87a0ab; --sea:#5fb9d3;
+    --magenta:#f0559f; --on-magenta:#1a0510;
+    --good:#4cc08a; --warn:#e0a240; --bad:#ff7468; --epic:#a594ff; --wave-alpha:.24;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --water:#06121a; --paper:#0b1b23; --ink:#d6e4e9; --ink-2:#87a0ab; --sea:#5fb9d3;
+  --magenta:#f0559f; --on-magenta:#1a0510;
+  --good:#4cc08a; --warn:#e0a240; --bad:#ff7468; --epic:#a594ff; --wave-alpha:.24;
+  color-scheme:dark;
+}
+
+*, *::before, *::after{ box-sizing:border-box; }
+html{ -webkit-text-size-adjust:100%; }
+@media (prefers-reduced-motion: no-preference){ html{ scroll-behavior:smooth; } }
+body{
+  background:var(--water); color:var(--ink);
+  font-family:var(--body); font-size:var(--t-body); line-height:1.6;
+  padding-inline:clamp(16px, 2.4vw, 32px); padding-block:clamp(16px, 2.4vw, 32px) 0;
+}
+h1, h2, h3, h4, p, figure{ margin:0; }
+a{ color:inherit; }
+button{ font:inherit; color:inherit; }
+:focus-visible{ outline:2px solid var(--magenta); outline-offset:3px; }
+.sr-only{ position:absolute !important; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
+.eyebrow{ font:500 var(--t-label)/1.35 var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--ink-2); }
+.lede{ color:var(--ink-2); max-width:52ch; font-size:1.09rem; }
+
+/* ── Hero: the chart's title block ─────────────────────────────────────────── */
+.chart{
+  position:relative; isolation:isolate; overflow:hidden;
+  padding:clamp(30px, 4vw, 44px) clamp(28px, 5vw, 72px) clamp(60px, 7vw, 96px);
+}
+.waves{ position:absolute; inset:0; z-index:-2; }
+.scrim{
+  position:absolute; inset:0; z-index:-1; pointer-events:none;
+  background:linear-gradient(90deg,
+    color-mix(in srgb, var(--water) 84%, transparent) 0%,
+    color-mix(in srgb, var(--water) 58%, transparent) 46%,
+    color-mix(in srgb, var(--water) 0%, transparent) 82%);
+}
+@media (max-width:900px){ .scrim{ background:color-mix(in srgb, var(--water) 62%, transparent); } }
+.neatline{ position:absolute; inset:8px; border:1px solid var(--rule-strong); pointer-events:none; }
+.neatline::before{ content:""; position:absolute; inset:5px; border:1px solid var(--rule-strong); }
+.neatline::after{
+  /* the graduated border of a chart: alternating filled minutes of latitude and longitude */
+  content:""; position:absolute; inset:0;
+  --seg:color-mix(in srgb, var(--ink) 38%, transparent);
+  background:
+    repeating-linear-gradient(90deg, var(--seg) 0 42px, transparent 42px 84px) top / 100% 5px no-repeat,
+    repeating-linear-gradient(90deg, var(--seg) 0 42px, transparent 42px 84px) bottom / 100% 5px no-repeat,
+    repeating-linear-gradient(180deg, var(--seg) 0 42px, transparent 42px 84px) left / 5px 100% no-repeat,
+    repeating-linear-gradient(180deg, var(--seg) 0 42px, transparent 42px 84px) right / 5px 100% no-repeat;
+}
+.margin-note{
+  position:absolute; left:50%; z-index:1; padding:0 12px; background:var(--water);
+  font:500 9.5px/1 var(--mono); letter-spacing:.16em; text-transform:uppercase; color:var(--ink-2);
+  white-space:nowrap;
+}
+.margin-note.top{ top:8px; transform:translate(-50%, -50%); }
+.margin-note.bottom{ bottom:8px; transform:translate(-50%, 50%); }
+@media (max-width:760px){
+  .margin-note.top{ display:none; }
+  .margin-note.bottom{ white-space:normal; width:max-content; max-width:calc(100% - 56px); text-align:center; line-height:1.4; }
+}
+
+.bar{ position:relative; z-index:2; display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.wordmark{ font:italic 500 1.9rem/1 var(--display); text-decoration:none; letter-spacing:-.01em; color:var(--ink); }
+.links{ display:flex; align-items:center; gap:clamp(14px, 2.2vw, 28px); }
+.links a, .links button{
+  font:500 var(--t-label)/1 var(--mono); letter-spacing:.12em; text-transform:uppercase;
+  color:var(--ink); text-decoration:none; background:none; border:0; padding:8px 0; cursor:pointer;
+  transition:color 160ms var(--ease-out);
+}
+.links a:hover, .links button:hover{ color:var(--magenta); }
+@media (max-width:460px){ .links .nav-notes{ display:none; } }
+
+.hero-grid{
+  position:relative; z-index:1; display:grid; align-items:end;
+  grid-template-columns:minmax(0, 1.5fr) minmax(0, 1fr);
+  gap:clamp(32px, 4vw, 64px); padding-top:clamp(44px, 8vw, 112px);
+}
+@media (max-width:900px){ .hero-grid{ grid-template-columns:minmax(0, 1fr); } }
+.hero-copy{ display:grid; gap:clamp(18px, 2.4vw, 28px); justify-items:start; min-width:0; }
+h1{
+  font-family:var(--display); font-weight:400; font-size:var(--t-hero);
+  line-height:.96; letter-spacing:-.018em; text-wrap:balance; max-width:13ch;
+}
+h1 em, h2 em{ color:var(--sea); }
+.hero-sub{ display:grid; gap:22px; justify-items:start; }
+.cta-row{ display:flex; flex-wrap:wrap; align-items:center; gap:14px 24px; }
+.btn{
+  display:inline-flex; align-items:center; gap:10px; cursor:pointer; text-decoration:none;
+  font:600 .95rem/1 var(--body); padding:15px 22px; border-radius:2px;
+  background:var(--ink); color:var(--paper); border:1px solid var(--ink);
+  transition:background-color 180ms var(--ease-out);
+}
+.btn:hover{ background:color-mix(in srgb, var(--ink) 84%, var(--sea)); }
+.btn-text{
+  font:500 .95rem/1 var(--body); color:var(--ink); background:none; border:0; cursor:pointer;
+  padding:6px 0; border-bottom:1px solid var(--rule-strong); text-decoration:none;
+  transition:color 160ms var(--ease-out), border-color 160ms var(--ease-out);
+}
+.btn-text:hover{ color:var(--magenta); border-color:var(--magenta); }
+
+/* the sample readings: an inset with a double rule */
+.readings{
+  min-width:0; display:grid; gap:16px; margin:4px; padding:18px 20px 20px;
+  background:var(--paper); border:1px solid var(--rule-strong);
+  outline:1px solid var(--rule); outline-offset:4px;
+}
+.readings-head{ display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:6px 14px; padding-bottom:12px; border-bottom:1px solid var(--rule); }
+.station{ font:500 var(--t-label)/1.35 var(--mono); letter-spacing:.12em; }
+.stamp{ font:400 var(--t-label)/1.35 var(--mono); letter-spacing:.06em; color:var(--ink-2); }
+.readouts{ display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:16px 18px; margin:0; }
+.readouts > div{ display:grid; gap:3px; min-width:0; }
+.readouts dt{ font:500 var(--t-label)/1.3 var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--ink-2); }
+.readouts dd{ margin:0; }
+.readouts .v{ font:italic 400 clamp(2rem, 1.55rem + 1.3vw, 2.6rem)/1.05 var(--display); font-variant-numeric:tabular-nums; white-space:nowrap; }
+.readouts .v small{ font:400 .85rem/1 var(--mono); margin-left:5px; color:var(--ink-2); }
+.readouts .d{ font-size:.84rem; line-height:1.4; color:var(--ink-2); }
+.call{ display:flex; flex-wrap:wrap; align-items:center; gap:8px 10px; padding-top:12px; border-top:1px solid var(--rule); font-size:.95rem; }
+
+.pill{
+  --k:var(--ink-2);
+  display:inline-flex; align-items:center; gap:6px; white-space:nowrap;
+  font:600 10.5px/1 var(--mono); letter-spacing:.1em; text-transform:uppercase;
+  padding:6px 9px 5px; border-radius:999px; color:var(--k);
+  background:color-mix(in srgb, var(--k) 12%, transparent);
+  border:1px solid color-mix(in srgb, var(--k) 38%, transparent);
+}
+.pill::before{ content:""; width:6px; height:6px; border-radius:50%; background:currentColor; }
+.pill.good{ --k:var(--good); } .pill.warn{ --k:var(--warn); } .pill.bad{ --k:var(--bad); }
+.pill.epic{ --k:var(--epic); } .pill.neutral{ --k:var(--ink-2); }
+
+/* ── Sections: chart insets ────────────────────────────────────────────────── */
+.inset{ max-width:1180px; margin-inline:auto; padding-block:clamp(72px, 10vw, 136px) 0; scroll-margin-top:16px; }
+.section-head{ display:grid; gap:14px; max-width:780px; margin-bottom:clamp(26px, 3.4vw, 44px); }
+h2{ font-family:var(--display); font-weight:400; font-size:var(--t-h2); line-height:1.02; letter-spacing:-.012em; text-wrap:balance; }
+
+.tide-panel{
+  display:grid; gap:20px; padding:clamp(16px, 2.4vw, 28px);
+  background:var(--paper); border:1px solid var(--rule-strong);
+  outline:1px solid var(--rule); outline-offset:4px; margin:4px;
+}
+.tide-top{ display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:12px 24px; }
+.tide-readout{ display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 18px; }
+.t-time{ font:500 clamp(1.9rem, 1.4rem + 1.6vw, 2.6rem)/1 var(--mono); letter-spacing:-.03em; }
+.t-height{ display:inline-block; min-width:3.7em; font:italic 400 clamp(2rem, 1.5rem + 1.8vw, 2.8rem)/1 var(--display); font-variant-numeric:tabular-nums; }
+.t-dir{ font:400 .8rem/1 var(--mono); color:var(--ink-2); }
+.t-call{ display:flex; flex-wrap:wrap; align-items:center; gap:8px 10px; color:var(--ink-2); font-size:.95rem; }
+.tide-body{ display:grid; grid-template-columns:minmax(0, 1fr) 116px; gap:18px; }
+.tide-main{ display:grid; gap:14px; min-width:0; }
+@media (max-width:620px){ .tide-body{ grid-template-columns:minmax(0, 1fr); } .staff{ display:none; } }
+
+.tide-chart{ min-width:0; touch-action:pan-y; cursor:ew-resize; user-select:none; -webkit-user-select:none; }
+.tide-chart svg{ display:block; width:100%; height:auto; overflow:visible; }
+.tide-chart svg text{ font-family:var(--mono); font-size:10.5px; fill:var(--ink-2); }
+.tide-chart svg text.c-extlab{ fill:var(--ink); }
+.legend{ display:flex; align-items:center; gap:8px; margin-left:38px; font:400 .75rem/1.35 var(--mono); color:var(--ink-2); }
+.swatch{ flex:none; width:14px; height:10px; background:color-mix(in srgb, var(--magenta) 16%, transparent); border:1px solid color-mix(in srgb, var(--magenta) 45%, transparent); }
+.c-grid{ stroke:var(--rule); }
+.c-axis{ stroke:var(--rule-strong); }
+.c-area{ fill:color-mix(in srgb, var(--sea) 15%, transparent); }
+.c-curve{ fill:none; stroke:var(--sea); stroke-width:2; stroke-linejoin:round; }
+.c-win{ fill:color-mix(in srgb, var(--magenta) 9%, transparent); }
+.c-now{ stroke:var(--ink-2); stroke-dasharray:3 3; }
+.c-ext{ fill:var(--paper); stroke:var(--sea); stroke-width:1.5; }
+.c-mark-line{ stroke:var(--ink); }
+.c-mark-dot{ fill:var(--paper); stroke:var(--ink); stroke-width:2; }
+
+/* tide staff: the graduated board on a piling, with the water standing against it */
+.staff{ position:relative; overflow:hidden; border-left:1px solid var(--rule); }
+.staff-svg{ position:absolute; inset:0; }
+.s-board{ fill:var(--paper); stroke:var(--rule-strong); }
+.s-major{ stroke:var(--ink); stroke-width:2; }
+.s-minor{ stroke:var(--ink-2); }
+.staff-svg text{ font:500 10px var(--mono); fill:var(--ink-2); }
+.staff-water{
+  position:absolute; inset:0; will-change:transform;
+  background:color-mix(in srgb, var(--sea) 24%, transparent); border-top:2px solid var(--sea);
+}
+.water-label{ position:absolute; left:8px; top:-21px; font:600 10.5px/1 var(--mono); color:var(--sea); white-space:nowrap; }
+
+/* recipe: elastic-slider, re-sprung (see script). The track lines up with the chart's plot area. */
+.es-track{ position:relative; height:10px; margin:6px 10px 6px 38px; cursor:pointer; touch-action:none; border-radius:6px; }
+.es-rail{ position:absolute; inset:0; overflow:hidden; border-radius:inherit; background:color-mix(in srgb, var(--ink) 11%, transparent); }
+.es-fill{ position:absolute; inset:0; transform-origin:left center; transform:scaleX(.258); background:linear-gradient(90deg, var(--sea), var(--magenta)); will-change:transform; }
+.es-knob{
+  position:absolute; top:50%; left:0; width:22px; height:22px; margin:-11px 0 0 -11px; border-radius:50%;
+  background:var(--paper); border:2px solid var(--ink); will-change:transform;
+  box-shadow:0 2px 8px color-mix(in srgb, var(--ink) 25%, transparent);
+}
+.es-track:focus-visible{ outline:2px solid var(--magenta); outline-offset:8px; }
+.jumps{ display:flex; flex-wrap:wrap; gap:8px; }
+.chip{
+  font:500 var(--t-label)/1 var(--mono); letter-spacing:.08em; text-transform:uppercase; cursor:pointer;
+  background:transparent; border:1px solid var(--rule-strong); border-radius:999px; padding:9px 12px;
+  transition:border-color 160ms var(--ease-out), color 160ms var(--ease-out);
+}
+.chip:hover{ border-color:var(--magenta); color:var(--magenta); }
+
+.cards{ display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:clamp(14px, 2vw, 22px); }
+@media (max-width:860px){ .cards{ grid-template-columns:minmax(0, 1fr); } }
+.card{
+  display:grid; gap:12px; align-content:start; padding:24px 22px 26px; border-radius:2px;
+  background:var(--paper); border:1px solid var(--rule-strong);
+}
+.card .glyph{ width:44px; height:44px; color:var(--sea); }
+.card .glyph *{ fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
+.card h3{ font:600 1.2rem/1.25 var(--body); letter-spacing:-.005em; }
+.card p{ color:var(--ink-2); }
+
+.spots{ list-style:none; margin:0; padding:0; border-top:1px solid var(--rule-strong); counter-reset:spot; }
+.spot{
+  counter-increment:spot; display:grid; align-items:center; gap:8px 20px; padding:18px 6px;
+  grid-template-columns:2.6rem minmax(0, 1.3fr) minmax(0, 1fr) auto;
+  grid-template-areas:"rank name when like";
+  border-bottom:1px solid var(--rule);
+}
+.spot::before{ content:counter(spot); grid-area:rank; font:italic 400 1.7rem/1 var(--display); color:var(--ink-2); }
+.spot-name{ grid-area:name; min-width:0; font:400 clamp(1.35rem, 1.1rem + .8vw, 1.75rem)/1.1 var(--display); }
+.spot-name small{ display:block; margin-top:6px; font:400 .75rem/1.4 var(--mono); letter-spacing:.03em; color:var(--ink-2); }
+.spot-when{ grid-area:when; min-width:0; display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; font:400 .8rem/1.4 var(--mono); color:var(--ink-2); }
+.spot .like-btn{ grid-area:like; }
+@media (max-width:640px){
+  .spot{ grid-template-columns:1.8rem minmax(0, 1fr) auto; grid-template-areas:"rank name like" ". when when"; }
+}
+
+.close{ max-width:1180px; margin-inline:auto; padding-block:clamp(96px, 13vw, 176px) clamp(56px, 8vw, 104px); display:grid; gap:24px; justify-items:start; }
+.close h2{ font-size:clamp(2.5rem, 1.2rem + 5.4vw, 6rem); line-height:1; max-width:15ch; }
+.close p{ color:var(--ink-2); max-width:58ch; }
+
+.foot{
+  max-width:1180px; margin-inline:auto; display:grid; gap:18px 40px;
+  grid-template-columns:minmax(0, 1fr) minmax(0, 1.5fr);
+  padding-block:24px 104px; border-top:1px solid var(--rule-strong);
+  font-size:.84rem; color:var(--ink-2);
+}
+.foot .wordmark{ font-size:1.5rem; }
+.foot-notes{ display:grid; gap:10px; max-width:70ch; }
+@media (max-width:760px){ .foot{ grid-template-columns:minmax(0, 1fr); } }
+
+/* ── recipe CSS, copied from motion-anything (colours moved onto this page's tokens) ── */
+
+/* blur-text · text-kinetic */
+.js [data-blur-text] .bt-w{ display:inline-block; opacity:0; filter:blur(8px); transition:opacity .62s ease-out, filter .62s ease-out; transition-delay:var(--bt-d, 0ms); }
+.js [data-blur-text].in .bt-w{ opacity:1; filter:blur(0); }
+
+/* fade-in-up · entrance (only hidden once script is running, so nothing is lost without it) */
+.js [data-fade]{ opacity:0; transform:translateY(14px); transition:opacity 460ms var(--ease-out), transform 460ms var(--ease-out); transition-delay:var(--fade-delay, 0ms); }
+.js [data-fade].is-in{ opacity:1; transform:none; }
+
+/* count-up · emphasis */
+[data-count]{ font-variant-numeric:tabular-nums; font-feature-settings:"tnum"; }
+
+/* magnetic-button · hover-press */
+.magnetic{ transition:transform 180ms var(--ease-spring), background-color 180ms var(--ease-out); will-change:transform; -webkit-tap-highlight-color:transparent; }
+.magnetic:active{ transform:scale(.97); }
+
+/* scroll-reveal · adapted to rest visible: only an element still below the fold is primed */
+[data-reveal].is-primed{ opacity:0; transform:translateY(16px); }
+[data-reveal].is-primed.is-in{
+  opacity:1; transform:none;
+  transition:opacity 520ms var(--ease-out), transform 520ms var(--ease-out), border-color 240ms var(--ease-out);
+  transition-delay:var(--reveal-delay, 0ms), var(--reveal-delay, 0ms), 0ms;
+}
+
+/* spotlight-card · hover-press */
+.spotlight{ position:relative; --mx:50%; --my:50%; overflow:hidden; isolation:isolate; transition:border-color 240ms var(--ease-out); }
+.spotlight::before{
+  content:""; position:absolute; inset:0; z-index:-1; opacity:0; transition:opacity 240ms var(--ease-out);
+  background:radial-gradient(280px circle at var(--mx) var(--my), color-mix(in srgb, var(--sea) 20%, transparent), transparent 62%);
+}
+.spotlight:hover{ border-color:color-mix(in srgb, var(--sea) 70%, transparent); }
+.spotlight:hover::before{ opacity:1; }
+@media (hover:none){ .spotlight::before{ display:none; } }
+
+/* like-burst · feedback-delight */
+.like-btn{
+  --lb-size:44px; width:var(--lb-size); height:var(--lb-size); display:inline-grid; place-items:center; padding:0;
+  border-radius:50%; border:1px solid var(--rule-strong); background:transparent; color:var(--ink-2); cursor:pointer;
+  transition:transform 160ms var(--ease-out), color 160ms ease, background-color 160ms ease, border-color 160ms ease;
+  -webkit-tap-highlight-color:transparent;
+}
+.like-btn svg{ width:20px; height:20px; }
+.like-btn svg path{ fill:none; stroke:currentColor; stroke-width:1.8; stroke-linejoin:round; }
+.like-btn:hover{ transform:scale(1.06); color:var(--magenta); }
+.like-btn:active{ transform:scale(.92); }
+.like-btn.is-liked{ color:var(--magenta); border-color:color-mix(in srgb, var(--magenta) 55%, transparent); background:color-mix(in srgb, var(--magenta) 10%, transparent); }
+.like-btn.is-liked svg path{ fill:currentColor; }
+@keyframes lb-pop{ 0%{ transform:scale(1); } 30%{ transform:scale(.8); } 60%{ transform:scale(1.25); } 100%{ transform:scale(1); } }
+.like-btn.lb-pop{ animation:lb-pop 420ms var(--ease-out); }
+.lb-particles{ position:absolute; width:0; height:0; pointer-events:none; z-index:60; }
+.lb-particle{ position:absolute; top:0; left:0; width:7px; height:7px; margin:-3.5px; border-radius:50%; animation:lb-fly 600ms var(--ease-out) forwards; }
+@keyframes lb-fly{ 0%{ transform:translate(0, 0) scale(1); opacity:1; } 70%{ opacity:1; } 100%{ transform:translate(var(--dx), var(--dy)) scale(.2); opacity:0; } }
+
+/* rotating-text · text-kinetic (the new word now rises from below) */
+.rot{ display:inline-block; overflow:hidden; vertical-align:bottom; padding:0 .08em .14em; margin:0 -.08em -.14em; color:var(--sea); font-style:italic; }
+.rot > .rot-w{ display:inline-block; transition:transform .45s var(--ease-out), opacity .45s var(--ease-out); }
+.rot.swap > .rot-w{ transform:translateY(-100%); opacity:0; }
+.rot.enter > .rot-w{ transform:translateY(100%); opacity:0; transition:none; }
+
+/* every recipe's reduced-motion fallback, in one place */
+@media (prefers-reduced-motion: reduce){
+  .js [data-blur-text] .bt-w{ opacity:1; filter:none; transition:none; }
+  .js [data-fade]{ opacity:1; transform:none; transition:none; }
+  .magnetic{ transition:none; }
+  [data-reveal].is-primed{ opacity:1; transform:none; transition:none; }
+  .spotlight{ transition:none; } .spotlight::before{ display:none; }
+  .like-btn, .like-btn:hover, .like-btn:active{ transition:color 120ms ease; transform:none; }
+  .like-btn.lb-pop{ animation:none; } .lb-particles{ display:none; }
+  .rot > .rot-w{ transition:none; }
+}
+
+/* ── Motion notes: the dock, the budget panel, and the labels ───────────────── */
+.dock{
+  position:fixed; z-index:70; display:flex; gap:8px;
+  right:clamp(12px, 2vw, 24px); bottom:calc(clamp(12px, 2vw, 24px) + env(safe-area-inset-bottom, 0px));
+}
+.dock button{
+  display:inline-flex; align-items:center; gap:8px; cursor:pointer;
+  font:600 var(--t-label)/1 var(--mono); letter-spacing:.1em; text-transform:uppercase;
+  padding:11px 14px; border-radius:999px; border:1px solid var(--ink); background:var(--ink); color:var(--paper);
+  box-shadow:0 6px 20px color-mix(in srgb, var(--ink) 22%, transparent);
+}
+.dock button.ghost{ background:var(--paper); color:var(--ink); border-color:var(--rule-strong); }
+.dock button[aria-pressed="true"]{ background:var(--magenta); border-color:var(--magenta); color:var(--on-magenta); }
+.dock .dot{ width:7px; height:7px; border-radius:50%; background:currentColor; }
+
+.hud{
+  position:fixed; z-index:70; display:grid; gap:12px; overflow:auto;
+  left:clamp(12px, 2vw, 24px); bottom:calc(clamp(12px, 2vw, 24px) + env(safe-area-inset-bottom, 0px));
+  width:min(352px, calc(100vw - 24px)); max-height:min(74vh, 620px); padding:16px 18px 18px;
+  background:var(--paper); color:var(--ink); border:1px solid var(--rule-strong);
+  outline:1px solid var(--rule); outline-offset:3px;
+  box-shadow:0 18px 50px color-mix(in srgb, var(--ink) 24%, transparent);
+  font-size:.84rem; line-height:1.45;
+}
+@media (max-width:640px){ .hud{ bottom:calc(66px + env(safe-area-inset-bottom, 0px)); max-height:50vh; } }
+.hud-title{ font:italic 400 1.65rem/1.1 var(--display); margin-top:4px; }
+.meters{ display:grid; gap:8px; padding-block:4px; }
+.meter{ display:grid; grid-template-columns:minmax(0, 1fr) auto auto; align-items:center; gap:10px; font:500 var(--t-label)/1 var(--mono); letter-spacing:.08em; text-transform:uppercase; color:var(--ink-2); }
+.meter b{ font-weight:600; color:var(--ink); text-align:right; white-space:nowrap; min-width:4.6em; }
+.segs{ display:inline-flex; gap:3px; }
+.segs i{ width:16px; height:8px; border:1px solid var(--rule-strong); }
+.segs i.on{ background:var(--sea); border-color:var(--sea); }
+.segs i.over{ background:var(--magenta); border-color:var(--magenta); }
+.hud h4{ font:600 var(--t-label)/1 var(--mono); letter-spacing:.12em; text-transform:uppercase; color:var(--ink-2); margin-top:2px; }
+.hud ul{ list-style:none; margin:0; padding:0; display:grid; gap:8px; }
+.hud li{ color:var(--ink-2); }
+.hud li b{ font:500 .76rem/1.3 var(--mono); color:var(--ink); }
+.hud li i{ font-style:normal; font:400 .7rem/1 var(--mono); color:var(--sea); margin-left:4px; }
+.hud-rule{ padding:10px 12px; background:color-mix(in srgb, var(--sea) 9%, transparent); border-left:2px solid var(--sea); }
+.hud-rm{ font:400 .72rem/1.45 var(--mono); color:var(--ink-2); }
+
+.notes-layer{ position:fixed; inset:0; z-index:65; pointer-events:none; }
+.nbox{ position:absolute; left:0; top:0; border:1.5px dashed var(--magenta); border-radius:3px; }
+.ntag{
+  position:absolute; left:0; top:0; white-space:pre; padding:4px 7px; border-radius:2px;
+  font:600 10px/1.4 var(--mono); letter-spacing:.02em; color:var(--on-magenta); background:var(--magenta);
+  box-shadow:0 2px 8px color-mix(in srgb, var(--ink) 25%, transparent);
+}
+</style>
+<script>document.documentElement.classList.add('js');</script>
+</head>
+<body>
+<header class="chart" id="top" data-view="hero" data-waves-host>
+  <div class="waves" data-orientation="horizontal" data-gap="11" data-line-var="--sea" data-alpha-var="--wave-alpha"
+       data-motion="waves:ambient:loop:loop"></div>
+  <div class="scrim"></div>
+  <div class="neatline" aria-hidden="true"></div>
+  <p class="margin-note top" aria-hidden="true">Chart NP-07 · Gull Reef approaches · Soundings in metres</p>
+
+  <nav class="bar" aria-label="Main">
+    <a class="wordmark" href="#top">Neap</a>
+    <div class="links">
+      <a href="#tide">Tide</a>
+      <a href="#spots">Spots</a>
+      <button type="button" class="nav-notes" data-notes-toggle>Motion notes</button>
+    </div>
+  </nav>
+
+  <div class="hero-grid">
+    <div class="hero-copy">
+      <p class="eyebrow">Concept · tide &amp; swell forecasts</p>
+      <h1 data-blur-text data-motion="blur-text:text-kinetic:load:entrance">Read the water before you <em>paddle out.</em></h1>
+      <div class="hero-sub" data-fade data-fade-delay="450" data-motion="fade-in-up:entrance:load:entrance, magnetic-button:hover-press:hover:-">
+        <p class="lede">Neap weighs swell, wind and tide for the break you're standing at, then gives you one call for the next few hours.</p>
+        <div class="cta-row">
+          <a class="btn magnetic" href="#tide" data-magnet-strength="0.25">See today's tide <span aria-hidden="true">↓</span></a>
+          <button type="button" class="btn-text" data-notes-toggle>How this page moves</button>
+        </div>
+      </div>
+    </div>
+
+    <aside class="readings" data-fade data-fade-delay="650" aria-labelledby="readings-title"
+           data-motion="fade-in-up:entrance:load:entrance, decrypted-text:text-kinetic:load + hover:-, count-up:emphasis:on view:moment">
+      <div class="readings-head">
+        <p class="station" id="readings-title"><span class="sr-only">Station NP-07, Gull Reef</span><span class="decrypt" aria-hidden="true" data-text="STATION NP-07 · GULL REEF" data-decrypt-delay="700">STATION NP-07 · GULL REEF</span></p>
+        <p class="stamp">Sample reading · 06:12</p>
+      </div>
+      <dl class="readouts">
+        <div><dt>Swell</dt><dd class="v"><span data-count="1.8" data-count-decimals="1" data-count-delay="1050">1.8</span><small>m</small></dd><dd class="d">13 s period, from the WNW</dd></div>
+        <div><dt>Wind</dt><dd class="v"><span data-count="6" data-count-delay="1050">6</span><small>kn</small></dd><dd class="d">Offshore, from the east</dd></div>
+        <div><dt>Tide</dt><dd class="v"><span id="r-tide" data-count="1.09" data-count-decimals="2" data-count-delay="1050">1.09</span><small>m</small></dd><dd class="d" id="r-tide-d">Rising 0.38 m/h</dd></div>
+        <div><dt>Water</dt><dd class="v"><span data-count="14.2" data-count-decimals="1" data-count-delay="1050">14.2</span><small>°C</small></dd><dd class="d">A 4/3 mm wetsuit</dd></div>
+      </dl>
+      <p class="call"><span class="pill good">Fun</span><span>Chest-high and clean until about <span id="r-until">07:20</span>.</span></p>
+    </aside>
+  </div>
+  <p class="margin-note bottom" aria-hidden="true">Heights above chart datum · lowest astronomical tide</p>
+</header>
+
+<main>
+  <section class="inset" id="tide" data-view="tide" aria-labelledby="tide-title">
+    <div class="section-head" data-reveal>
+      <p class="eyebrow">Gull Reef · today · sample data</p>
+      <h2 id="tide-title">The tide, <em>by the hour.</em></h2>
+      <p class="lede">Drag across the day. The marker, the tide staff and the call follow you on one spring, then settle.</p>
+    </div>
+    <div class="tide-panel" data-reveal data-reveal-delay="80"
+         data-motion="elastic-slider:feedback-delight:drag:moment, scroll-reveal:scroll-reveal:on view:entrance">
+      <div class="tide-top">
+        <div class="tide-readout">
+          <span class="t-time" id="t-time">06:12</span>
+          <span class="t-height" id="t-height">1.09 m</span>
+          <span class="t-dir" id="t-dir">↑ rising 0.38 m/h</span>
+        </div>
+        <p class="t-call"><span class="pill good" id="t-pill">Best window</span><span id="t-note">Rising mid tide</span></p>
+      </div>
+      <div class="tide-body">
+        <div class="tide-main">
+          <figure class="tide-chart" id="tide-chart" aria-hidden="true"></figure>
+          <div class="scrub" id="scrub">
+            <div class="es-track" role="slider" tabindex="0" aria-label="Time of day at Gull Reef"
+                 aria-valuemin="0" aria-valuemax="1440" aria-valuenow="372" aria-valuetext="06:12">
+              <div class="es-rail"><div class="es-fill"></div></div>
+              <div class="es-knob"></div>
+            </div>
+          </div>
+          <p class="legend"><span class="swatch" aria-hidden="true"></span>Best window: a rising mid tide, 0.7–1.5 m</p>
+        </div>
+        <figure class="staff" id="staff" aria-hidden="true">
+          <div class="staff-water"><span class="water-label" id="w-label">1.09 m</span></div>
+        </figure>
+      </div>
+      <p class="sr-only" id="tide-summary"></p>
+      <div class="jumps" role="group" aria-label="Jump to a time">
+        <button type="button" class="chip" data-jump="now">Now · 06:12</button>
+        <button type="button" class="chip" data-jump="high">High · 09:28</button>
+        <button type="button" class="chip" data-jump="evening">Evening window · 18:13</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="inset" id="features" data-view="features" aria-labelledby="features-title">
+    <div class="section-head" data-reveal>
+      <p class="eyebrow">What Neap watches for you</p>
+      <h2 id="features-title">Less chart reading, <em>more water time.</em></h2>
+    </div>
+    <div class="cards" data-motion="scroll-reveal:scroll-reveal:on view:entrance, spotlight-card:hover-press:hover:-">
+      <article class="card spotlight" data-reveal>
+        <svg class="glyph" viewBox="0 0 44 44" aria-hidden="true"><path d="M4 25c6-12 12-12 18 0s12 12 18 0"/><path d="M4 36h36" stroke-dasharray="2 4"/><circle cx="22" cy="25" r="2.4"/></svg>
+        <h3>One call, not twelve charts</h3>
+        <p>Swell size and period, wind and tide are weighed for your break and boiled down to one word: flat, marginal, fun or firing.</p>
+      </article>
+      <article class="card spotlight" data-reveal data-reveal-delay="80">
+        <svg class="glyph" viewBox="0 0 44 44" aria-hidden="true"><circle cx="9.5" cy="34.5" r="3.5"/><path d="M12 32 35 9"/><path d="M35 9l6 6"/><path d="M30.5 13.5l6 6"/><path d="M26 18l3 3"/></svg>
+        <h3>Alerts that know your board</h3>
+        <p>Tell Neap you ride a longboard and it stops waking you for overhead closeouts on the reef.</p>
+      </article>
+      <article class="card spotlight" data-reveal data-reveal-delay="160">
+        <svg class="glyph" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="17"/><path d="M22 7l3 12 12 3-12 3-3 12-3-12-12-3 12-3z"/></svg>
+        <h3>Tide tables that work offline</h3>
+        <p>The week's tides and the last forecast stay on your phone for the car park with one bar of signal.</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="inset" id="spots" data-view="spots" aria-labelledby="spots-title">
+    <div class="section-head" data-reveal>
+      <p class="eyebrow">Ranked for 06:12 · sample spots</p>
+      <h2 id="spots-title">Your spots, <em>best first.</em></h2>
+      <p class="lede">Save a break and its call comes first. None of these places exist, but the hearts work.</p>
+    </div>
+    <ol class="spots" data-motion="scroll-reveal:scroll-reveal:on view:entrance, like-burst:feedback-delight:tap:moment">
+      <li class="spot" data-reveal>
+        <div class="spot-name">Salt Steps<small>Ledge · experts only</small></div>
+        <div class="spot-when"><span class="pill epic">Firing</span><span>Overhead until 09:00</span></div>
+        <button type="button" class="like-btn" data-like-burst aria-pressed="false" aria-label="Save Salt Steps"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z"/></svg></button>
+      </li>
+      <li class="spot" data-reveal data-reveal-delay="80">
+        <div class="spot-name">Gull Reef<small>Reef · rising mid tide</small></div>
+        <div class="spot-when"><span class="pill good">Fun</span><span id="gull-when">Best 05:06–07:18</span></div>
+        <button type="button" class="like-btn is-liked" data-like-burst aria-pressed="true" aria-label="Save Gull Reef"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z"/></svg></button>
+      </li>
+      <li class="spot" data-reveal data-reveal-delay="160">
+        <div class="spot-name">Harrow Point<small>Point · needs a north wind</small></div>
+        <div class="spot-when"><span class="pill warn">Marginal</span><span>Onshore from 10:00</span></div>
+        <button type="button" class="like-btn" data-like-burst aria-pressed="false" aria-label="Save Harrow Point"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z"/></svg></button>
+      </li>
+      <li class="spot" data-reveal data-reveal-delay="240">
+        <div class="spot-name">Lantern Bay<small>Beach · sheltered</small></div>
+        <div class="spot-when"><span class="pill neutral">Flat</span><span>Good for a swim</span></div>
+        <button type="button" class="like-btn" data-like-burst aria-pressed="false" aria-label="Save Lantern Bay"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z"/></svg></button>
+      </li>
+    </ol>
+  </section>
+
+  <section class="close" id="close" data-view="close" aria-labelledby="close-title">
+    <h2 id="close-title" data-reveal data-motion="rotating-text:text-kinetic:loop:loop">Know the water, whether you <span class="sr-only">surf, swim, sail or dive</span><span class="rot" aria-hidden="true" data-words="surf|swim|sail|dive">surf</span>.</h2>
+    <p data-reveal data-reveal-delay="80">Neap is a design concept, and nothing on this page is a real forecast. Every motion here is a recipe from motion-anything, an open-source motion library. Open the notes to see which recipe moves what, and what was held back.</p>
+    <div class="cta-row" data-reveal data-reveal-delay="160">
+      <button type="button" class="btn" data-notes-toggle>Open motion notes</button>
+      <a class="btn-text" href="https://github.com/nexu-io/motion-anything" target="_blank" rel="noopener">motion-anything on GitHub ↗</a>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div><a class="wordmark" href="#top">Neap</a><p>A concept page for a tide and swell app.</p></div>
+  <div class="foot-notes">
+    <p>Gull Reef, Salt Steps, Harrow Point and Lantern Bay are invented. Every reading and tide on this page is sample data.</p>
+    <p>Motion comes from <a href="https://github.com/nexu-io/motion-anything" target="_blank" rel="noopener">motion-anything</a> recipes by nexu.io (Apache-2.0). Several are dependency-free ports of <a href="https://reactbits.dev" target="_blank" rel="noopener">react-bits</a> effects, used with the author's permission. Set in Bodoni Moda, Public Sans and Martian Mono.</p>
+  </div>
+</footer>
+
+<div class="dock">
+  <button type="button" class="ghost" id="pause-loops" aria-pressed="false">Pause loops</button>
+  <button type="button" data-notes-toggle aria-controls="hud" aria-pressed="false"><span class="dot" aria-hidden="true"></span>Motion notes</button>
+</div>
+<aside class="hud" id="hud" hidden aria-label="Motion notes for this view">
+  <div><p class="eyebrow">Motion notes · this view</p><h3 class="hud-title" id="hud-title">Hero</h3></div>
+  <div class="meters" id="hud-meters"></div>
+  <p class="hud-rule" id="hud-rule"></p>
+  <h4>Recipes here</h4><ul id="hud-recipes"></ul>
+  <h4>Held back</h4><ul id="hud-held"></ul>
+  <p class="hud-rm" id="hud-rm"></p>
+</aside>
+<div class="notes-layer" id="notes-layer" aria-hidden="true" hidden></div>
+
+<script>
+(function(){
+'use strict';
+var RM = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+var T0 = performance.now();
+var NEAP = window.__neap = { paused:false, onTheme:[], onPause:[] };
+function onReady(f){ if(document.readyState !== 'loading') f(); else document.addEventListener('DOMContentLoaded', f); }
+function token(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+(function(){
+  function fire(){ NEAP.onTheme.forEach(function(f){ try{ f(); }catch(e){} }); }
+  try{ matchMedia('(prefers-color-scheme: dark)').addEventListener('change', fire); }catch(e){}
+  try{ new MutationObserver(fire).observe(document.documentElement, { attributes:true, attributeFilter:['data-theme'] }); }catch(e){}
+})();
+
+/* ════ Sample data: a semi-diurnal tide for Gull Reef (invented) ════════════════════════
+   Every label on the chart, the readings card and the spot list is computed from h(t). */
+var Tide = (function(){
+  var W = 2*Math.PI/12.42, W2 = 2*Math.PI/24.84, HI = 9.55;
+  function h(t){ return 1.06 + 0.74*Math.cos(W*(t - HI)) + 0.13*Math.cos(W2*(t - HI) + 0.55); }
+  function rate(t){ return (h(t + 1/120) - h(t - 1/120)) * 60; }            // metres per hour
+  function fmt(t){ var m = Math.max(0, Math.min(1440, Math.round(t*60))), hh = Math.floor(m/60), mm = m % 60;
+    return (hh < 10 ? '0' : '') + hh + ':' + (mm < 10 ? '0' : '') + mm; }
+  function inWindow(t){ var v = h(t); return rate(t) > 0 && v >= 0.7 && v <= 1.5; }   // the reef likes a rising mid tide
+  function call(t){
+    var v = h(t), r = rate(t);
+    if(v < 0.5) return { k:'bad', label:'Too shallow', note:'The reef sits close to the surface' };
+    if(v > 1.7) return { k:'warn', label:'Too full', note:'Waves go soft over the reef' };
+    if(inWindow(t)) return { k:'good', label:'Best window', note:'Rising mid tide' };
+    return { k:'neutral', label:'Workable', note:r > 0 ? (v < 0.7 ? 'Rising, still shallow' : 'Rising, getting full') : 'Falling mid tide' };
+  }
+  var extremes = [], windows = [], open = null;
+  for(var m = 0; m <= 1440; m++){
+    var t = m/60;
+    if(m > 0 && m < 1440){
+      var a = h((m - 1)/60), b = h(t), c = h((m + 1)/60);
+      if(b > a && b >= c) extremes.push({ k:'H', t:t, v:b });
+      if(b < a && b <= c) extremes.push({ k:'L', t:t, v:b });
+    }
+    var ok = inWindow(t);
+    if(ok && open === null) open = t;
+    if(!ok && open !== null){ windows.push([open, t]); open = null; }
+  }
+  if(open !== null) windows.push([open, 24]);
+  return { h:h, rate:rate, fmt:fmt, call:call, extremes:extremes, windows:windows, NOW:6.2 };
+})();
+
+(function fillFromModel(){
+  var now = Tide.NOW, v = Tide.h(now), r = Tide.rate(now);
+  var tv = document.getElementById('r-tide'); tv.setAttribute('data-count', v.toFixed(2)); tv.textContent = v.toFixed(2);
+  document.getElementById('r-tide-d').textContent = (r >= 0 ? 'Rising ' : 'Falling ') + Math.abs(r).toFixed(2) + ' m/h';
+  var w = Tide.windows.filter(function(w){ return now >= w[0] && now < w[1]; })[0];
+  if(w) document.getElementById('r-until').textContent = Tide.fmt(Math.round(w[1]*6)/6);
+  var gw = Tide.windows[0]; document.getElementById('gull-when').textContent = 'Best ' + Tide.fmt(gw[0]) + '–' + Tide.fmt(gw[1]);
+  var high = Tide.extremes.filter(function(e){ return e.k === 'H' && e.t > now; })[0];
+  var eve = Tide.windows.filter(function(w){ return w[0] > 12; })[0];
+  var chips = document.querySelectorAll('[data-jump]');
+  [].forEach.call(chips, function(b){
+    var k = b.getAttribute('data-jump');
+    if(k === 'now'){ b.setAttribute('data-t', now); b.textContent = 'Now · ' + Tide.fmt(now); }
+    if(k === 'high' && high){ b.setAttribute('data-t', high.t); b.textContent = 'High · ' + Tide.fmt(high.t); }
+    if(k === 'evening' && eve){ b.setAttribute('data-t', eve[0]); b.textContent = 'Evening window · ' + Tide.fmt(eve[0]); }
+  });
+  var H = Tide.extremes.filter(function(e){ return e.k === 'H'; }), L = Tide.extremes.filter(function(e){ return e.k === 'L'; });
+  function list(a){ return a.map(function(e){ return Tide.fmt(e.t) + ' (' + e.v.toFixed(2) + ' m)'; }).join(' and '); }
+  document.getElementById('tide-summary').textContent = 'Sample tide for Gull Reef today. High water at ' + list(H) +
+    '; low water at ' + list(L) + '. Best windows: ' + Tide.windows.map(function(w){ return Tide.fmt(w[0]) + ' to ' + Tide.fmt(w[1]); }).join(' and ') + '.';
+})();
+
+
+/* ════ motion-anything recipes ════════════════════════════════════════════════════════
+   Copied from motion-anything/recipes/web/<id>. Where a copy differs from the library,
+   the note above it says how and why. */
+
+/* ── waves · ambient (canvas 2D port of react-bits "Waves") ──
+   Adapted: data-orientation="horizontal" so the lines run like water; a devicePixelRatio-
+   sharp canvas; stroke colour from CSS tokens so it follows the theme; the pointer wake
+   listens on the whole hero (data-waves-host); the loop pauses off screen or when paused. */
+(function(g){
+  var DEF = { waveSpeedX:0.0125, waveSpeedY:0.005, waveAmpX:32, waveAmpY:16, xGap:10, yGap:32,
+    friction:0.925, tension:0.005, maxCursorMove:100 };
+  function Grad(x, y){ this.x = x; this.y = y; }
+  Grad.prototype.dot2 = function(x, y){ return this.x*x + this.y*y; };
+  function Noise(seed){
+    this.grad3 = [new Grad(1,1),new Grad(-1,1),new Grad(1,-1),new Grad(-1,-1),
+      new Grad(1,0),new Grad(-1,0),new Grad(1,0),new Grad(-1,0),
+      new Grad(0,1),new Grad(0,-1),new Grad(0,1),new Grad(0,-1)];
+    this.p = [151,160,137,91,90,15,131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,
+      21,10,23,190,6,148,247,120,234,75,0,26,197,62,94,252,219,203,117,35,11,32,57,177,33,88,
+      237,149,56,87,174,20,125,136,171,168,68,175,74,165,71,134,139,48,27,166,77,146,158,231,83,
+      111,229,122,60,211,133,230,220,105,92,41,55,46,245,40,244,102,143,54,65,25,63,161,1,216,
+      80,73,209,76,132,187,208,89,18,169,200,196,135,130,116,188,159,86,164,100,109,198,173,186,
+      3,64,52,217,226,250,124,123,5,202,38,147,118,126,255,82,85,212,207,206,59,227,47,16,58,
+      17,182,189,28,42,223,183,170,213,119,248,152,2,44,154,163,70,221,153,101,155,167,43,172,9,
+      129,22,39,253,19,98,108,110,79,113,224,232,178,185,112,104,218,246,97,228,251,34,242,193,
+      238,210,144,12,191,179,162,241,81,51,145,235,249,14,239,107,49,192,214,31,181,199,106,157,
+      184,84,204,176,115,121,50,45,127,4,150,254,138,236,205,93,222,114,67,29,24,72,243,141,128,
+      195,78,66,215,61,156,180];
+    this.perm = new Array(512); this.gradP = new Array(512); this.seed(seed || 0);
+  }
+  Noise.prototype.seed = function(seed){
+    if(seed > 0 && seed < 1) seed *= 65536;
+    seed = Math.floor(seed); if(seed < 256) seed |= seed << 8;
+    for(var i = 0; i < 256; i++){ var v = (i & 1) ? this.p[i] ^ (seed & 255) : this.p[i] ^ ((seed >> 8) & 255);
+      this.perm[i] = this.perm[i + 256] = v; this.gradP[i] = this.gradP[i + 256] = this.grad3[v % 12]; }
+  };
+  Noise.prototype.fade = function(t){ return t*t*t*(t*(t*6 - 15) + 10); };
+  Noise.prototype.lerp = function(a, b, t){ return (1 - t)*a + t*b; };
+  Noise.prototype.perlin2 = function(x, y){
+    var X = Math.floor(x), Y = Math.floor(y); x -= X; y -= Y; X &= 255; Y &= 255;
+    var n00 = this.gradP[X + this.perm[Y]].dot2(x, y);
+    var n01 = this.gradP[X + this.perm[Y + 1]].dot2(x, y - 1);
+    var n10 = this.gradP[X + 1 + this.perm[Y]].dot2(x - 1, y);
+    var n11 = this.gradP[X + 1 + this.perm[Y + 1]].dot2(x - 1, y - 1);
+    var u = this.fade(x);
+    return this.lerp(this.lerp(n00, n10, u), this.lerp(n01, n11, u), this.fade(y));
+  };
+  function rgba(hex, a){
+    var m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(hex || ''); if(!m) return hex || 'black';
+    var s = m[1].length === 3 ? m[1].replace(/./g, '$&$&') : m[1], n = parseInt(s, 16);
+    return 'rgba(' + (n >> 16 & 255) + ',' + (n >> 8 & 255) + ',' + (n & 255) + ',' + a + ')';
+  }
+  function start(el){
+    if(el.__ma) return; el.__ma = 1;
+    var horiz = el.getAttribute('data-orientation') === 'horizontal';
+    var gap = parseFloat(el.getAttribute('data-gap')) || DEF.xGap;     // between lines
+    var step = DEF.yGap;                                                // between points on a line
+    var ampX = horiz ? DEF.waveAmpY : DEF.waveAmpX, ampY = horiz ? DEF.waveAmpX : DEF.waveAmpY;
+    var host = el.closest('[data-waves-host]') || el;
+    var canvas = document.createElement('canvas');
+    canvas.style.cssText = 'width:100%;height:100%;display:block';
+    el.appendChild(canvas);
+    var ctx = canvas.getContext('2d'); if(!ctx) return;
+    var noise = new Noise(Math.random());
+    var lines = [], W = 0, H = 0, color = 'black';
+    var mouse = { x:-10, y:0, lx:0, ly:0, sx:0, sy:0, v:0, vs:0, a:0, set:false };
+    function readColor(){
+      var v = el.getAttribute('data-line-var'), a = el.getAttribute('data-alpha-var');
+      color = v ? rgba(token(v), a ? (parseFloat(token(a)) || 0.3) : 1) : (el.getAttribute('data-line-color') || 'black');
+    }
+    function setSize(){
+      var r = el.getBoundingClientRect(), dpr = Math.min(2, g.devicePixelRatio || 1);
+      W = r.width; H = r.height;
+      canvas.width = Math.max(1, Math.round(W*dpr)); canvas.height = Math.max(1, Math.round(H*dpr));
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    function pt(x, y){ return { x:x, y:y, wx:0, wy:0, cx:0, cy:0, cvx:0, cvy:0 }; }
+    function setLines(){
+      lines = []; var i, j, pts;
+      if(!horiz){
+        var tl = Math.ceil((W + 200)/gap), tp = Math.ceil((H + 30)/step), xs = (W - gap*tl)/2, ys = (H - step*tp)/2;
+        for(i = 0; i <= tl; i++){ pts = []; for(j = 0; j <= tp; j++) pts.push(pt(xs + gap*i, ys + step*j)); lines.push(pts); }
+      } else {
+        var tl2 = Math.ceil((H + 200)/gap), tp2 = Math.ceil((W + 30)/step), ys2 = (H - gap*tl2)/2, xs2 = (W - step*tp2)/2;
+        for(i = 0; i <= tl2; i++){ pts = []; for(j = 0; j <= tp2; j++) pts.push(pt(xs2 + step*j, ys2 + gap*i)); lines.push(pts); }
+      }
+    }
+    function movePoints(time){
+      for(var i = 0; i < lines.length; i++){ var pts = lines[i];
+        for(var j = 0; j < pts.length; j++){ var p = pts[j];
+          var move = noise.perlin2((p.x + time*DEF.waveSpeedX)*0.002, (p.y + time*DEF.waveSpeedY)*0.0015)*12;
+          p.wx = Math.cos(move)*ampX; p.wy = Math.sin(move)*ampY;
+          var dx = p.x - mouse.sx, dy = p.y - mouse.sy;
+          var dist = Math.hypot(dx, dy), l = Math.max(175, mouse.vs);
+          if(dist < l){ var s = 1 - dist/l; var f = Math.cos(dist*0.001)*s;
+            p.cvx += Math.cos(mouse.a)*f*l*mouse.vs*0.00065;
+            p.cvy += Math.sin(mouse.a)*f*l*mouse.vs*0.00065; }
+          p.cvx += (0 - p.cx)*DEF.tension; p.cvy += (0 - p.cy)*DEF.tension;
+          p.cvx *= DEF.friction; p.cvy *= DEF.friction;
+          p.cx += p.cvx*2; p.cy += p.cvy*2;
+          p.cx = Math.min(DEF.maxCursorMove, Math.max(-DEF.maxCursorMove, p.cx));
+          p.cy = Math.min(DEF.maxCursorMove, Math.max(-DEF.maxCursorMove, p.cy));
+        }
+      }
+    }
+    function moved(p, withCursor){
+      var x = p.x + p.wx + (withCursor ? p.cx : 0), y = p.y + p.wy + (withCursor ? p.cy : 0);
+      return { x:Math.round(x*10)/10, y:Math.round(y*10)/10 };
+    }
+    function drawLines(){
+      ctx.clearRect(0, 0, W, H);
+      ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = 1;
+      for(var i = 0; i < lines.length; i++){ var pts = lines[i];
+        var p1 = moved(pts[0], false); ctx.moveTo(p1.x, p1.y);
+        for(var j = 0; j < pts.length; j++){ var isLast = j === pts.length - 1;
+          p1 = moved(pts[j], !isLast);
+          var p2 = moved(pts[j + 1] || pts[pts.length - 1], !isLast);
+          ctx.lineTo(p1.x, p1.y);
+          if(isLast) ctx.moveTo(p2.x, p2.y);
+        }
+      }
+      ctx.stroke();
+    }
+    function updateMouse(x, y){
+      var r = el.getBoundingClientRect(); mouse.x = x - r.left; mouse.y = y - r.top;
+      if(!mouse.set){ mouse.sx = mouse.x; mouse.sy = mouse.y; mouse.lx = mouse.x; mouse.ly = mouse.y; mouse.set = true; }
+    }
+    host.addEventListener('mousemove', function(e){ updateMouse(e.clientX, e.clientY); }, { passive:true });
+    host.addEventListener('touchmove', function(e){ var t = e.touches[0]; if(t) updateMouse(t.clientX, t.clientY); }, { passive:true });
+
+    var sim = 2000, prev = null, visible = true, running = false;   // simulated time stays continuous across pauses
+    function frame(){
+      mouse.sx += (mouse.x - mouse.sx)*0.1; mouse.sy += (mouse.y - mouse.sy)*0.1;
+      var d = Math.hypot(mouse.x - mouse.lx, mouse.y - mouse.ly);
+      mouse.vs += (d - mouse.vs)*0.1; mouse.vs = Math.min(100, mouse.vs);
+      mouse.a = Math.atan2(mouse.y - mouse.ly, mouse.x - mouse.lx);
+      mouse.lx = mouse.x; mouse.ly = mouse.y;
+      movePoints(sim); drawLines();
+    }
+    function loop(t){
+      if(!visible || NEAP.paused || RM){ running = false; prev = null; return; }
+      if(prev !== null) sim += Math.min(50, t - prev);
+      prev = t; frame(); requestAnimationFrame(loop);
+    }
+    function kick(){ if(!running && visible && !NEAP.paused && !RM){ running = true; requestAnimationFrame(loop); } }
+    function still(){ setSize(); setLines(); frame(); }
+    readColor(); still();
+    if('ResizeObserver' in g) new ResizeObserver(function(){ still(); }).observe(el);
+    else g.addEventListener('resize', still);
+    if('IntersectionObserver' in g) new IntersectionObserver(function(es){ visible = es[0].isIntersecting; kick(); }).observe(el);
+    NEAP.onTheme.push(function(){ readColor(); if(!running) frame(); });
+    NEAP.onPause.push(kick);
+    kick();
+  }
+  onReady(function(){ var els = document.querySelectorAll('.waves'); for(var i = 0; i < els.length; i++) start(els[i]); });
+})(window);
+
+/* ── blur-text · text-kinetic ──
+   Adapted: words are split inside inline children too, so the headline's <em> survives. */
+(function(){
+  function split(el){
+    var i = 0;
+    (function walk(node){
+      [].slice.call(node.childNodes).forEach(function(n){
+        if(n.nodeType === 3){
+          var frag = document.createDocumentFragment();
+          n.textContent.split(/(\s+)/).forEach(function(p){
+            if(p === '') return;
+            if(/^\s+$/.test(p)){ frag.appendChild(document.createTextNode(' ')); return; }
+            var w = document.createElement('span'); w.className = 'bt-w'; w.textContent = p;
+            w.style.setProperty('--bt-d', (i++ * 90) + 'ms'); frag.appendChild(w);
+          });
+          node.replaceChild(frag, n);
+        } else if(n.nodeType === 1) walk(n);
+      });
+    })(el);
+  }
+  onReady(function(){
+    var els = [].slice.call(document.querySelectorAll('[data-blur-text]')); if(!els.length) return;
+    els.forEach(split);
+    if(RM){ els.forEach(function(e){ e.classList.add('in'); }); return; }
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){ els.forEach(function(e){ e.classList.add('in'); }); }); });
+  });
+})();
+
+/* ── fade-in-up · entrance ── (as in the library) */
+(function(){
+  onReady(function(){
+    var els = document.querySelectorAll('[data-fade]'); if(!els.length) return;
+    if(RM){ [].forEach.call(els, function(el){ el.classList.add('is-in'); }); return; }
+    [].forEach.call(els, function(el, i){
+      var d = el.getAttribute('data-fade-delay');
+      el.style.setProperty('--fade-delay', (d != null ? parseInt(d, 10) : i*70) + 'ms');
+    });
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){ [].forEach.call(els, function(el){ el.classList.add('is-in'); }); }); });
+  });
+})();
+
+/* ── count-up · emphasis ──
+   Adapted: data-count-decimals for readings like 1.8 m; the markup holds the final value, so
+   the card is complete at rest. A number is only zeroed when it is about to be seen. */
+(function(){
+  function fmt(el, n){
+    var d = parseInt(el.getAttribute('data-count-decimals') || '0', 10);
+    return (el.getAttribute('data-count-prefix') || '') + (d ? n.toFixed(d) : Math.round(n).toLocaleString()) + (el.getAttribute('data-count-suffix') || '');
+  }
+  function run(el){
+    var target = parseFloat(el.getAttribute('data-count')) || 0;
+    var dur = parseInt(el.getAttribute('data-count-duration'), 10) || 900, start = null;
+    function step(ts){
+      if(start === null) start = ts;
+      var p = Math.min((ts - start)/dur, 1), eased = 1 - Math.pow(1 - p, 3);   // ease-out cubic
+      el.textContent = fmt(el, target*eased);
+      if(p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+  onReady(function(){
+    var els = [].slice.call(document.querySelectorAll('[data-count]'));
+    if(!els.length || RM || !('IntersectionObserver' in window)) return;   // final values already shown
+    var near = new IntersectionObserver(function(es){ es.forEach(function(e){
+      if(e.isIntersecting){ if(e.boundingClientRect.top > innerHeight && !e.target.__ran) e.target.textContent = fmt(e.target, 0); near.unobserve(e.target); }
+    }); }, { rootMargin:'0px 0px 40% 0px' });
+    var fire = new IntersectionObserver(function(es){ es.forEach(function(e){
+      if(!e.isIntersecting) return;
+      var el = e.target; fire.unobserve(el); el.__ran = 1; el.textContent = fmt(el, 0);
+      var d = performance.now() - T0 < 1600 ? parseInt(el.getAttribute('data-count-delay') || '0', 10) : 120;
+      setTimeout(function(){ run(el); }, d);
+    }); }, { threshold:0.6 });
+    els.forEach(function(el){ near.observe(el); fire.observe(el); });
+  });
+})();
+
+/* ── decrypted-text · text-kinetic ──
+   Adapted: resolves when it comes into view (after its delay on first load), and on hover. */
+(function(g){
+  var CH = '!<>-_\\/[]{}=+*^?#';
+  function run(el){
+    var target = el.getAttribute('data-text') || el.textContent; if(RM){ el.textContent = target; return; }
+    var frame = 0; clearInterval(el.__d);
+    el.__d = setInterval(function(){
+      var out = '';
+      for(var i = 0; i < target.length; i++){
+        if(i < frame/2) out += target[i];
+        else if(target[i] === ' ') out += ' ';
+        else out += CH[Math.floor(Math.random()*CH.length)];
+      }
+      el.textContent = out; frame++;
+      if(frame/2 >= target.length){ clearInterval(el.__d); el.textContent = target; }
+    }, 30);
+  }
+  function attach(el){
+    if(el.__dec) return; el.__dec = 1;
+    el.setAttribute('data-text', el.getAttribute('data-text') || el.textContent);
+    el.addEventListener('mouseenter', function(){ run(el); });
+    if(!('IntersectionObserver' in g)){ run(el); return; }
+    var io = new IntersectionObserver(function(es){
+      if(!es[0].isIntersecting) return; io.disconnect();
+      var d = performance.now() - T0 < 1600 ? parseInt(el.getAttribute('data-decrypt-delay') || '0', 10) : 0;
+      setTimeout(function(){ run(el); }, d);
+    }); io.observe(el);
+  }
+  g.decryptEl = run;
+  onReady(function(){ var els = document.querySelectorAll('.decrypt'); for(var i = 0; i < els.length; i++) attach(els[i]); });
+})(window);
+
+/* ── magnetic-button · hover-press ── (as in the library) */
+(function(g){
+  function isTouch(){ return g.matchMedia && g.matchMedia('(hover: none)').matches; }
+  function attach(btn){
+    if(btn.__magnetBound) return; btn.__magnetBound = true;
+    var strength = parseFloat(btn.getAttribute('data-magnet-strength')) || 0.3;
+    btn.addEventListener('pointermove', function(e){
+      var r = btn.getBoundingClientRect();
+      var dx = e.clientX - (r.left + r.width/2), dy = e.clientY - (r.top + r.height/2);
+      btn.style.transform = 'translate(' + dx*strength + 'px,' + dy*strength + 'px)';
+    });
+    btn.addEventListener('pointerleave', function(){ btn.style.transform = ''; });
+  }
+  onReady(function(){ if(RM || isTouch()) return; var els = document.querySelectorAll('.magnetic'); for(var i = 0; i < els.length; i++) attach(els[i]); });
+})(window);
+
+/* ── scroll-reveal · scroll-reveal ──
+   Adapted: content rests visible. An element is primed (hidden) only while it is still below
+   the fold and about to arrive, then revealed on entry, so if no observer ever fires (a
+   screenshot, print, a reader who never scrolls) nothing is left hidden. */
+(function(){
+  onReady(function(){
+    var els = [].slice.call(document.querySelectorAll('[data-reveal]'));
+    if(!els.length || RM || !('IntersectionObserver' in window)) return;
+    els.forEach(function(el){ var d = el.getAttribute('data-reveal-delay'); if(d) el.style.setProperty('--reveal-delay', parseInt(d, 10) + 'ms'); });
+    var near = new IntersectionObserver(function(es){ es.forEach(function(e){
+      if(!e.isIntersecting) return;
+      if(e.boundingClientRect.top > innerHeight && !e.target.classList.contains('is-in')) e.target.classList.add('is-primed');
+      near.unobserve(e.target);
+    }); }, { rootMargin:'0px 0px 35% 0px' });
+    var show = new IntersectionObserver(function(es){ es.forEach(function(e){
+      if(!e.isIntersecting) return;
+      var el = e.target; show.unobserve(el);
+      requestAnimationFrame(function(){ el.classList.add('is-in'); });
+    }); }, { threshold:0.15, rootMargin:'0px 0px -8% 0px' });
+    els.forEach(function(el){ near.observe(el); show.observe(el); });
+  });
+})();
+
+/* ── spotlight-card · hover-press ── (as in the library) */
+(function(g){
+  function isTouch(){ return g.matchMedia && g.matchMedia('(hover: none)').matches; }
+  function attach(card){
+    if(card.__spotBound) return; card.__spotBound = true;
+    card.addEventListener('pointermove', function(e){
+      var r = card.getBoundingClientRect();
+      card.style.setProperty('--mx', (e.clientX - r.left) + 'px');
+      card.style.setProperty('--my', (e.clientY - r.top) + 'px');
+    });
+  }
+  onReady(function(){ if(RM || isTouch()) return; var els = document.querySelectorAll('.spotlight'); for(var i = 0; i < els.length; i++) attach(els[i]); });
+})(window);
+
+/* ── like-burst · feedback-delight ──
+   Adapted: particle colours come from the page's tokens. Fires on save only, never on load. */
+(function(g){
+  var PARTICLE_COUNT = 14;
+  function colors(){ return ['--magenta', '--sea', '--epic', '--warn', '--good'].map(token).filter(Boolean); }
+  function spawnParticles(btn){
+    var rect = btn.getBoundingClientRect(), cs = colors();
+    var layer = document.createElement('div'); layer.className = 'lb-particles';
+    layer.style.left = (rect.left + rect.width/2 + g.scrollX) + 'px';
+    layer.style.top = (rect.top + rect.height/2 + g.scrollY) + 'px';
+    document.body.appendChild(layer);
+    for(var i = 0; i < PARTICLE_COUNT; i++){
+      var p = document.createElement('span'); p.className = 'lb-particle';
+      var angle = (Math.PI*2*i)/PARTICLE_COUNT + Math.random()*0.4, dist = 26 + Math.random()*26;
+      p.style.setProperty('--dx', Math.cos(angle)*dist + 'px');
+      p.style.setProperty('--dy', Math.sin(angle)*dist + 'px');
+      p.style.background = cs[i % cs.length];
+      p.style.animationDelay = Math.random()*40 + 'ms';
+      layer.appendChild(p);
+    }
+    setTimeout(function(){ layer.remove(); }, 700);   // clean up (MOTION-SPEC §5)
+  }
+  function attachLikeBurst(btn){
+    if(!btn || btn.__likeBurstBound) return; btn.__likeBurstBound = true;
+    btn.addEventListener('click', function(){
+      var liked = btn.classList.toggle('is-liked');
+      btn.setAttribute('aria-pressed', String(liked));
+      btn.classList.remove('lb-pop'); void btn.offsetWidth; btn.classList.add('lb-pop');
+      if(liked && !RM) spawnParticles(btn);
+    });
+  }
+  g.attachLikeBurst = attachLikeBurst;
+  onReady(function(){ var els = document.querySelectorAll('[data-like-burst]'); for(var i = 0; i < els.length; i++) attachLikeBurst(els[i]); });
+})(window);
+
+/* ── rotating-text · text-kinetic ──
+   Adapted: the new word rises from below; it only cycles while on screen and not paused;
+   under reduced motion it shows the whole list instead of one word. */
+(function(){
+  function attach(el){
+    if(el.__rot) return; el.__rot = 1;
+    var words = (el.getAttribute('data-words') || el.textContent).split('|').map(function(s){ return s.trim(); }), i = 0;
+    if(RM){ el.textContent = words.slice(0, -1).join(', ') + ' or ' + words[words.length - 1]; return; }
+    el.textContent = '';
+    var w = document.createElement('span'); w.className = 'rot-w'; w.textContent = words[0]; el.appendChild(w);
+    var visible = false;
+    if('IntersectionObserver' in window) new IntersectionObserver(function(es){ visible = es[0].isIntersecting; }).observe(el);
+    else visible = true;
+    setInterval(function(){
+      if(!visible || NEAP.paused || document.hidden) return;
+      i = (i + 1) % words.length; el.classList.add('swap');
+      setTimeout(function(){
+        w.textContent = words[i]; el.classList.remove('swap'); el.classList.add('enter');
+        void w.offsetWidth; el.classList.remove('enter');
+      }, 460);
+    }, 2200);
+  }
+  onReady(function(){ var els = document.querySelectorAll('.rot'); for(var i = 0; i < els.length; i++) attach(els[i]); });
+})();
+
+
+/* ════ Page: the tide chart, the staff, and the scrubber ═══════════════════════════════ */
+var NS = 'http://www.w3.org/2000/svg';
+function svgEl(name, attrs, parent){
+  var e = document.createElementNS(NS, name);
+  for(var k in attrs) e.setAttribute(k, attrs[k]);
+  if(parent) parent.appendChild(e);
+  return e;
+}
+
+var Chart = (function(){
+  var fig = document.getElementById('tide-chart'), svg = null, dims = null;
+  var M = { l:38, r:10, t:30, b:28 }, YMAX = 2;      // the slider track uses the same left/right inset
+  function build(){
+    var w = Math.max(260, Math.round(fig.clientWidth)), narrow = w < 560;
+    var H = Math.round(Math.min(320, Math.max(220, w*0.4)));
+    var pw = w - M.l - M.r, ph = H - M.t - M.b;
+    function x(t){ return M.l + t/24*pw; }
+    function y(v){ return M.t + (1 - v/YMAX)*ph; }
+    if(svg) svg.remove();
+    svg = svgEl('svg', { viewBox:'0 0 ' + w + ' ' + H, width:w, height:H });
+    Tide.windows.forEach(function(wn){   // labelled by the legend under the slider, so nothing collides at any width
+      svgEl('rect', { x:x(wn[0]), y:M.t, width:x(wn[1]) - x(wn[0]), height:ph, 'class':'c-win' }, svg);
+    });
+    [0, 0.5, 1, 1.5, 2].forEach(function(v){
+      svgEl('line', { x1:M.l, x2:w - M.r, y1:y(v), y2:y(v), 'class':v === 0 ? 'c-axis' : 'c-grid' }, svg);
+      svgEl('text', { x:M.l - 8, y:y(v) + 3.5, 'text-anchor':'end' }, svg).textContent = v === YMAX ? '2.0 m' : v.toFixed(1);
+    });
+    var stepH = narrow ? 6 : 3;
+    for(var t = 0; t <= 24; t += stepH){
+      svgEl('line', { x1:x(t), x2:x(t), y1:M.t + ph, y2:M.t + ph + 4, 'class':'c-axis' }, svg);
+      svgEl('text', { x:x(t), y:H - 8, 'text-anchor':t === 0 ? 'start' : (t === 24 ? 'end' : 'middle') }, svg).textContent = (t < 10 ? '0' : '') + t + ':00';
+    }
+    var d = '', a = 'M' + x(0) + ',' + y(0);
+    for(var i = 0; i <= 24*12; i++){
+      var tt = i/12, px = x(tt).toFixed(1), py = y(Tide.h(tt)).toFixed(1);
+      d += (i ? 'L' : 'M') + px + ',' + py; a += 'L' + px + ',' + py;
+    }
+    a += 'L' + x(24) + ',' + y(0) + 'Z';
+    svgEl('path', { d:a, 'class':'c-area' }, svg);
+    svgEl('path', { d:d, 'class':'c-curve' }, svg);
+    svgEl('line', { x1:x(Tide.NOW), x2:x(Tide.NOW), y1:M.t, y2:M.t + ph, 'class':'c-now' }, svg);
+    svgEl('text', { x:x(Tide.NOW) + 4, y:M.t + ph - 6 }, svg).textContent = 'now';
+    Tide.extremes.forEach(function(e){
+      var px = x(e.t), py = y(e.v);
+      var label = narrow ? (e.k + ' ' + Tide.fmt(e.t)) : ((e.k === 'H' ? 'High ' : 'Low ') + Tide.fmt(e.t) + ' · ' + e.v.toFixed(2) + ' m');
+      var half = label.length*3.4, anchor = 'middle';
+      if(px + half > w - 2) anchor = 'end'; else if(px - half < M.l) anchor = 'start';
+      svgEl('circle', { cx:px, cy:py, r:3, 'class':'c-ext' }, svg);
+      // highs are labelled above the crest, lows below the trough: both sides stay clear of the curve
+      svgEl('text', { x:px, y:e.k === 'H' ? py - 10 : py + 17, 'text-anchor':anchor, 'class':'c-extlab' }, svg).textContent = label;
+    });
+    var g = svgEl('g', {}, svg);
+    var vl = svgEl('line', { y1:M.t, y2:M.t + ph, 'class':'c-mark-line' }, g);
+    var dot = svgEl('circle', { r:6, 'class':'c-mark-dot' }, g);
+    fig.appendChild(svg);
+    dims = { x:x, y:y, w:w, pw:pw, vl:vl, dot:dot };
+  }
+  function mark(t){
+    if(!dims) return;
+    var px = dims.x(t).toFixed(1), py = dims.y(Tide.h(t)).toFixed(1);
+    dims.vl.setAttribute('x1', px); dims.vl.setAttribute('x2', px);
+    dims.dot.setAttribute('cx', px); dims.dot.setAttribute('cy', py);
+  }
+  function timeAt(clientX){
+    var r = fig.getBoundingClientRect(), px = (clientX - r.left)*(dims.w/r.width);
+    return (px - M.l)/dims.pw*24;
+  }
+  return { build:build, mark:mark, timeAt:timeAt };
+})();
+
+var Staff = (function(){
+  var fig = document.getElementById('staff'), water = fig.querySelector('.staff-water'), PAD = 16, H = 0;
+  function build(){
+    H = fig.clientHeight; var W = fig.clientWidth; if(!H || !W) return;
+    var old = fig.querySelector('svg'); if(old) old.remove();
+    var s = svgEl('svg', { viewBox:'0 0 ' + W + ' ' + H, width:W, height:H, 'class':'staff-svg' });
+    var bx = Math.round(W/2) + 4, bw = 24;
+    svgEl('rect', { x:bx, y:PAD - 6, width:bw, height:H - 2*PAD + 12, 'class':'s-board' }, s);
+    for(var k = 0; k <= 20; k++){
+      var v = k/10, yy = PAD + (1 - v/2)*(H - 2*PAD), major = k % 5 === 0;
+      svgEl('line', { x1:bx, x2:bx + (major ? bw : bw*0.45), y1:yy, y2:yy, 'class':major ? 's-major' : 's-minor' }, s);
+      if(major) svgEl('text', { x:bx - 7, y:yy + 3.5, 'text-anchor':'end' }, s).textContent = v.toFixed(1);
+    }
+    fig.insertBefore(s, fig.firstChild);
+  }
+  function level(v){ if(H) water.style.transform = 'translateY(' + (PAD + (1 - v/2)*(H - 2*PAD)).toFixed(1) + 'px)'; }
+  return { build:build, level:level };
+})();
+
+/* ── elastic-slider · feedback-delight, re-sprung ──
+   The library version springs width/left with a CSS overshoot curve. MOTION-SPEC §5 rules out
+   animating layout properties, so here the fill scales (scaleX) and the knob translates,
+   driven by the spec's spring-snappy token (stiffness 300, damping 30). Keyboard: arrows move
+   10 minutes, Shift or Page keys an hour, Home/End the ends of the day. */
+var Scrub = (function(){
+  var track = document.querySelector('.es-track'), fill = track.querySelector('.es-fill'), knob = track.querySelector('.es-knob');
+  var out = { time:document.getElementById('t-time'), height:document.getElementById('t-height'), dir:document.getElementById('t-dir'),
+    pill:document.getElementById('t-pill'), note:document.getElementById('t-note'), wl:document.getElementById('w-label') };
+  var K = 300, C = 30, target = Tide.NOW, pos = Tide.NOW, vel = 0, raf = 0, last = 0, tw = 0, lastMin = -1;
+  function clampT(t){ return Math.max(0, Math.min(24, t)); }
+  function text(t){
+    var v = Tide.h(t), r = Tide.rate(t), c = Tide.call(t);
+    out.time.textContent = Tide.fmt(t);
+    out.height.textContent = v.toFixed(2) + ' m'; out.wl.textContent = v.toFixed(2) + ' m';
+    out.dir.textContent = (r >= 0 ? '↑ rising ' : '↓ falling ') + Math.abs(r).toFixed(2) + ' m/h';
+    out.pill.className = 'pill ' + c.k; out.pill.textContent = c.label; out.note.textContent = c.note;
+  }
+  function render(){
+    var t = clampT(pos), p = t/24;
+    fill.style.transform = 'scaleX(' + p.toFixed(4) + ')';
+    knob.style.transform = 'translateX(' + (p*tw).toFixed(1) + 'px)';
+    Chart.mark(t); Staff.level(Tide.h(t));
+    var m = Math.round(t*60); if(m !== lastMin){ lastMin = m; text(t); }
+  }
+  function aria(){
+    var c = Tide.call(target);
+    track.setAttribute('aria-valuenow', Math.round(target*60));
+    track.setAttribute('aria-valuetext', Tide.fmt(target) + ', ' + Tide.h(target).toFixed(2) + ' metres, ' + (Tide.rate(target) >= 0 ? 'rising' : 'falling') + '. ' + c.label + '.');
+  }
+  function step(now){
+    var dt = Math.min(0.034, (now - last)/1000); last = now;
+    for(var i = 0, n = 4, h = dt/n; i < n; i++){ var acc = -K*(pos - target) - C*vel; vel += acc*h; pos += vel*h; }
+    if(Math.abs(pos - target) < 1e-3 && Math.abs(vel) < 1e-2){ pos = target; vel = 0; render(); raf = 0; return; }
+    render(); raf = requestAnimationFrame(step);
+  }
+  function set(t){
+    target = clampT(t); aria();
+    if(RM){ pos = target; vel = 0; render(); return; }
+    if(!raf){ last = performance.now(); raf = requestAnimationFrame(step); }
+  }
+  function fromTrack(cx){ var r = track.getBoundingClientRect(); return (cx - r.left)/r.width*24; }
+  var dragging = false;
+  track.addEventListener('pointerdown', function(e){
+    dragging = true; try{ track.setPointerCapture(e.pointerId); }catch(_){}
+    set(fromTrack(e.clientX)); track.focus({ preventScroll:true }); e.preventDefault();
+  });
+  track.addEventListener('pointermove', function(e){ if(dragging) set(fromTrack(e.clientX)); });
+  track.addEventListener('pointerup', function(){ dragging = false; });
+  track.addEventListener('pointercancel', function(){ dragging = false; });
+  track.addEventListener('keydown', function(e){
+    var m = Math.round(target*60), d = 0;
+    switch(e.key){
+      case 'ArrowRight': case 'ArrowUp': d = e.shiftKey ? 60 : 10; break;
+      case 'ArrowLeft': case 'ArrowDown': d = e.shiftKey ? -60 : -10; break;
+      case 'PageUp': d = 60; break;
+      case 'PageDown': d = -60; break;
+      case 'Home': e.preventDefault(); set(0); return;
+      case 'End': e.preventDefault(); set(24); return;
+      default: return;
+    }
+    e.preventDefault(); set((m + d)/60);
+  });
+  // The chart scrubs too. With a mouse it starts at once; with touch, only a sideways drag or a
+  // tap scrubs, so a vertical swipe across the chart still scrolls the page.
+  var fig = document.getElementById('tide-chart'), sx = 0, sy = 0, mode = null, pid = null;
+  fig.addEventListener('pointerdown', function(e){
+    sx = e.clientX; sy = e.clientY; pid = e.pointerId;
+    if(e.pointerType === 'mouse'){ mode = 'scrub'; try{ fig.setPointerCapture(pid); }catch(_){} set(Chart.timeAt(e.clientX)); }
+    else mode = 'pending';
+  });
+  fig.addEventListener('pointermove', function(e){
+    if(e.pointerId !== pid) return;
+    if(mode === 'pending'){
+      var dx = Math.abs(e.clientX - sx), dy = Math.abs(e.clientY - sy);
+      if(dx > 8 && dx > dy){ mode = 'scrub'; try{ fig.setPointerCapture(pid); }catch(_){} }
+      else if(dy > 8) mode = null;
+    }
+    if(mode === 'scrub') set(Chart.timeAt(e.clientX));
+  });
+  fig.addEventListener('pointerup', function(e){ if(mode === 'pending') set(Chart.timeAt(e.clientX)); mode = null; pid = null; });
+  fig.addEventListener('pointercancel', function(){ mode = null; pid = null; });
+  [].forEach.call(document.querySelectorAll('[data-jump]'), function(b){
+    b.addEventListener('click', function(){ set(parseFloat(b.getAttribute('data-t'))); });
+  });
+  function layout(){ Chart.build(); Staff.build(); tw = track.clientWidth; lastMin = -1; render(); }
+  return { layout:layout, init:function(){ layout(); aria(); } };
+})();
+Scrub.init();
+(function(){
+  var pending = 0;
+  function relayout(){ if(pending) return; pending = requestAnimationFrame(function(){ pending = 0; Scrub.layout(); }); }
+  if('ResizeObserver' in window) new ResizeObserver(relayout).observe(document.querySelector('.tide-main'));
+  else window.addEventListener('resize', relayout);
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(relayout);
+})();
+
+
+/* ════ Page: motion notes ════════════════════════════════════════════════════════════════
+   Each animated component carries data-motion="recipe:category:trigger:budget". The panel
+   reads those tags, plus the real entrance delays, to show the budget for the view you are
+   looking at (MOTION-SPEC §4: one loop, one moment, at most three entrances at once). */
+(function(){
+  var WHY = {
+    'waves':'Water you can disturb with the pointer: the view’s one ambient loop.',
+    'blur-text':'The headline resolves like a view clearing, word by word.',
+    'fade-in-up':'Copy and readings follow the headline, staggered so three never start together.',
+    'magnetic-button':'The primary action leans toward the pointer, a few pixels at most.',
+    'decrypted-text':'The station line decodes as if its data were arriving.',
+    'count-up':'Readings roll up once, when the card has landed and you can see them.',
+    'elastic-slider':'Scrub the day. One spring moves the knob, the marker and the waterline.',
+    'scroll-reveal':'Content settles in as it arrives, and rests visible if you never scroll.',
+    'spotlight-card':'A light follows the pointer across each card. Paint only.',
+    'like-burst':'Saving a spot is the one celebration here, and only on your tap.',
+    'rotating-text':'The one loop in this view: four reasons to read the water.'
+  };
+  var VIEWS = {
+    hero:{ name:'Hero', rule:'No competing loops (§4). The wave field is this view’s one ambient animation, so nothing else here loops.',
+      held:[['star-border', 'on “See today’s tide”', 'It loops, and the wave field already owns the loop.'],
+            ['rotating-text', 'in the headline', 'One claim above the fold. The rotating line waits for the close.']] },
+    tide:{ name:'Tide', rule:'Motion as feedback (§1). The scrub rides spring-snappy (stiffness 300, damping 30) and settles in about a third of a second.',
+      held:[['count-up', 'on the tide height', 'A number you are dragging should track your hand, not perform.'],
+            ['ambient water ripple', 'on the staff', 'The waterline moves only when you do.']] },
+    features:{ name:'Features', rule:'Hover feedback stays in the fast band and paints only. Nothing changes layout (§2, §5).',
+      held:[['tilt-3d', 'on the cards', 'Spotlight already answers the pointer. Two hover effects on one card compete.']] },
+    spots:{ name:'Spots', rule:'Never auto-play celebration (§4). The burst fires when you save a spot, never when you unsave one.',
+      held:[['like-burst', 'for the spot already saved', 'Delight is earned. Nothing bursts on load.'],
+            ['fx-confetti', 'on save', 'A slide-scale effect. Fourteen particles is enough for a heart.']] },
+    close:{ name:'Close', rule:'Under reduced motion the rotating word becomes the whole list, so nothing is lost (§6).',
+      held:[['star-border', 'on the buttons', 'rotating-text already owns this view’s one loop.']] }
+  };
+  var on = false, layer = document.getElementById('notes-layer'), hud = document.getElementById('hud');
+  var toggles = [].slice.call(document.querySelectorAll('[data-notes-toggle]')), items = [], raf = 0, lastView = null;
+  var views = [].slice.call(document.querySelectorAll('[data-view]'));
+  function parse(el){
+    return el.getAttribute('data-motion').split(',').map(function(s){
+      var p = s.trim().split(':');
+      return { id:p[0], cat:p[1], trigger:p[2], budget:p[3] || '-' };
+    });
+  }
+  function build(){
+    layer.textContent = '';
+    items = [].slice.call(document.querySelectorAll('[data-motion]')).map(function(el){
+      var specs = parse(el), box = document.createElement('div'), tag = document.createElement('div');
+      box.className = 'nbox'; tag.className = 'ntag';
+      tag.textContent = specs.map(function(s){ return s.id + ' · ' + s.cat + ' · ' + s.trigger; }).join('\n');
+      layer.appendChild(box); layer.appendChild(tag);
+      return { el:el, specs:specs, box:box, tag:tag };
+    });
+  }
+  function place(){
+    var vh = innerHeight, vw = document.documentElement.clientWidth;
+    var rects = items.map(function(it){ return it.el.getBoundingClientRect(); });
+    var sizes = items.map(function(it){ return [it.tag.offsetWidth, it.tag.offsetHeight]; });
+    items.forEach(function(it, i){
+      var r = rects[i], vis = r.bottom > 0 && r.top < vh && r.width > 0;
+      it.box.hidden = it.tag.hidden = !vis; if(!vis) return;
+      it.box.style.transform = 'translate(' + r.left + 'px,' + r.top + 'px)';
+      it.box.style.width = r.width + 'px'; it.box.style.height = r.height + 'px';
+      var tw = sizes[i][0], th = sizes[i][1];
+      var tx = Math.max(4, Math.min(r.left, vw - tw - 4));
+      var ty = r.height < 72 ? r.top - th - 4 : r.top + 6;     // small parts get their label above
+      if(r.height >= 72) tx = Math.max(4, Math.min(r.left + 6, vw - tw - 4));
+      ty = Math.max(4, Math.min(ty, vh - th - 4));
+      it.tag.style.transform = 'translate(' + tx + 'px,' + ty + 'px)';
+    });
+  }
+  function currentView(){
+    var mid = innerHeight*0.45, best = views[0];
+    views.forEach(function(v){ if(v.getBoundingClientRect().top <= mid) best = v; });
+    return best;
+  }
+  function segs(n, max){
+    var s = '<span class="segs">';
+    for(var i = 0; i < Math.max(n, max); i++) s += '<i class="' + (i < n ? (i < max ? 'on' : 'over') : '') + '"></i>';
+    return s + '</span>';
+  }
+  function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]; }); }
+  function renderHud(v){
+    var id = v.getAttribute('data-view'), cfg = VIEWS[id];
+    var its = items.filter(function(it){ return v.contains(it.el); });
+    var loops = 0, moments = {}, seen = {}, list = [];
+    its.forEach(function(it){ it.specs.forEach(function(s){
+      if(s.budget === 'loop') loops++;
+      if(s.budget === 'moment') moments[s.id] = 1;
+      if(!seen[s.id]){ seen[s.id] = 1; list.push(s); }
+    }); });
+    var groups = {}, together = 0;
+    [].forEach.call(v.querySelectorAll('[data-reveal],[data-fade],[data-blur-text]'), function(el){
+      var d = el.getAttribute('data-reveal-delay') || el.getAttribute('data-fade-delay') || '0';
+      groups[d] = (groups[d] || 0) + 1; together = Math.max(together, groups[d]);
+    });
+    var nm = Object.keys(moments).length;
+    document.getElementById('hud-title').textContent = cfg.name;
+    document.getElementById('hud-meters').innerHTML =
+      '<div class="meter"><span>Loops' + (NEAP.paused && loops ? ' (paused)' : '') + '</span>' + segs(loops, 1) + '<b>' + loops + ' / 1</b></div>' +
+      '<div class="meter"><span>Moments</span>' + segs(nm, 1) + '<b>' + nm + ' / 1</b></div>' +
+      '<div class="meter"><span>Entrances at once</span>' + segs(together, 3) + '<b>' + together + ' / 3</b></div>';
+    document.getElementById('hud-rule').textContent = cfg.rule;
+    document.getElementById('hud-recipes').innerHTML = list.map(function(s){
+      return '<li><b>' + esc(s.id) + '</b><i>' + esc(s.cat) + ' · ' + esc(s.trigger) + '</i><br>' + esc(WHY[s.id] || '') + '</li>';
+    }).join('');
+    document.getElementById('hud-held').innerHTML = cfg.held.map(function(h){
+      return '<li><b>' + esc(h[0]) + '</b> ' + esc(h[1]) + '. ' + esc(h[2]) + '</li>';
+    }).join('');
+    document.getElementById('hud-rm').textContent = RM
+      ? 'Reduced motion is on: loops hold still, entrances are instant and bursts are off.'
+      : 'Motion is on. Turn on Reduce motion in your system settings to see every fallback.';
+  }
+  function tick(){
+    if(!on){ raf = 0; return; }
+    place();
+    var v = currentView(); if(v !== lastView){ lastView = v; renderHud(v); }
+    raf = requestAnimationFrame(tick);
+  }
+  function setOn(next){
+    on = next;
+    toggles.forEach(function(b){ b.setAttribute('aria-pressed', String(on)); });
+    hud.hidden = !on; layer.hidden = !on;
+    if(on){ if(!items.length) build(); lastView = null; if(!raf) raf = requestAnimationFrame(tick); }
+  }
+  toggles.forEach(function(b){ b.addEventListener('click', function(){ setOn(!on); }); });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && on){ setOn(false); return; }
+    if((e.key === 'm' || e.key === 'M') && !e.metaKey && !e.ctrlKey && !e.altKey && !/input|textarea|select/i.test(e.target.tagName)) setOn(!on);
+  });
+  var pause = document.getElementById('pause-loops');
+  if(RM) pause.hidden = true;
+  pause.addEventListener('click', function(){
+    NEAP.paused = !NEAP.paused;
+    pause.setAttribute('aria-pressed', String(NEAP.paused));
+    pause.textContent = NEAP.paused ? 'Play loops' : 'Pause loops';
+    NEAP.onPause.forEach(function(f){ f(); });
+    if(on && lastView) renderHud(lastView);
+  });
+})();
+
+})();
+</script>
+</body>
+</html>

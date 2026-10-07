@@ -1,0 +1,11 @@
+Neap Tide Forecasts
+A concept page for a tide and swell app.
+
+This page includes adapted motion recipes from motion-anything
+(https://github.com/nexu-io/motion-anything), Copyright 2026 nexu.io,
+licensed under the Apache License, Version 2.0. Each adapted recipe is marked
+in index.html with a comment describing how it differs from the original.
+
+Several of those recipes are dependency-free ports of react-bits effects
+(https://reactbits.dev), redistributed by motion-anything with the author's
+permission (see motion-anything's ATTRIBUTION.md).
