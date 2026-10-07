@@ -18,7 +18,7 @@ It is a single `index.html` with no build step. The only outside request is Goog
 ## Notes
 
 - Gull Reef, Salt Steps, Harrow Point and Lantern Bay are invented, and every reading is sample data.
-- Building this page turned up six bugs in the library's recipes. The fixes were sent upstream to motion-anything.
+- Building this page turned up six bugs in the library's recipes. The fixes were sent upstream in [nexu-io/motion-anything#8](https://github.com/nexu-io/motion-anything/pull/8).
 
 ## Credits and license
 
